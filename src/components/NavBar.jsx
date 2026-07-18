@@ -1,46 +1,52 @@
+import { Link } from "react-router-dom";
+
 function NavBar() {
   return (
     <nav
       style={{
-        textAlign: "center",
+        backgroundColor: "#4B5563",
         padding: "15px",
+        textAlign: "center",
       }}
     >
-      <a
-        href="#about"
+      <Link
+        to="/"
         style={{
-          margin: "0 15px",
-          color: "black",
+          color: "white",
           textDecoration: "none",
+          margin: "0 30px",
+          fontSize: "20px",
           fontWeight: "bold",
         }}
       >
-        About
-      </a>
+        Home
+      </Link>
 
-      <a
-        href="#skills"
+      <Link
+        to="/projects"
         style={{
-          margin: "0 15px",
-          color: "black",
+          color: "white",
           textDecoration: "none",
+          margin: "0 30px",
+          fontSize: "20px",
           fontWeight: "bold",
         }}
       >
-        Skills
-      </a>
+        Projects
+      </Link>
 
-      <a
-        href="#contact"
+      <Link
+        to="/contact"
         style={{
-          margin: "0 15px",
-          color: "black",
+          color: "white",
           textDecoration: "none",
+          margin: "0 30px",
+          fontSize: "20px",
           fontWeight: "bold",
         }}
       >
         Contact
-      </a>
+      </Link>
     </nav>
   );
 }

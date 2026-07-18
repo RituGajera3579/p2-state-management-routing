@@ -1,15 +1,18 @@
-function Footer({ email }) {
+function Footer() {
   return (
     <footer
-      id="contact"
       style={{
         textAlign: "center",
-        padding: "20px",
+        padding: "30px",
       }}
     >
-      <p>Contact: {email}</p>
+      <p style={{ fontSize: "18px" }}>
+        Contact: ritugajera@example.com
+      </p>
 
-      <p>© 2026 Student Portfolio</p>
+      <p style={{ fontSize: "18px" }}>
+        © 2026 Student Portfolio
+      </p>
     </footer>
   );
 }
