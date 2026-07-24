@@ -12,8 +12,7 @@ function Contact() {
       }}
     >
       <h2>Contact Me</h2>
-
-      <button
+    <button
         onClick={() => setShowHelp(!showHelp)}
         style={{
           padding: "10px 20px",
