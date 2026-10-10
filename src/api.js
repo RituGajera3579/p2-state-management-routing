@@ -1,60 +1,36 @@
-const BASE_URL = "http://localhost:5000";
 
-// GET - Fetch all tasks
-export const getTasks = () => {
-  return fetch(`${BASE_URL}/tasks`)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error("Failed to fetch tasks");
-      }
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-      return res.json();
-    });
-};
+export async function getTasks() {
+  const response = await fetch(`${BASE_URL}/tasks`);
+  return response.json();
+}
 
-// POST - Create a new task
-export const createTask = (task) => {
-  return fetch(`${BASE_URL}/tasks`, {
+export async function createTask(task) {
+  const response = await fetch(`${BASE_URL}/tasks`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(task),
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error("Failed to create task");
-    }
-
-    return res.json();
   });
-};
+  return response.json();
+}
 
-// PUT - Update an existing task
-export const updateTask = (id, task) => {
-  return fetch(`${BASE_URL}/tasks/${id}`, {
+export async function updateTask(id, task) {
+  const response = await fetch(`${BASE_URL}/tasks/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(task),
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error("Failed to update task");
-    }
-
-    return res.json();
   });
-};
+  return response.json();
+}
 
-// DELETE - Delete a task
-export const deleteTask = (id) => {
-  return fetch(`${BASE_URL}/tasks/${id}`, {
+export async function deleteTask(id) {
+  const response = await fetch(`${BASE_URL}/tasks/${id}`, {
     method: "DELETE",
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error("Failed to delete task");
-    }
-
-    return res.json();
   });
-};
+  return response.json();
+}
