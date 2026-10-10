@@ -10,6 +10,9 @@ const mongoose = require("mongoose");
 // Import Task model
 const Task = require("./models/Task");
 
+// Import task event emitter
+const taskEventEmitter = require("./events/taskEvents");
+
 // Import cache and cache statistics
 const { cache, stats } = require("./cache");
 
@@ -32,7 +35,7 @@ mongoose
     console.log("MongoDB Connected");
   })
   .catch((err) => {
-    console.log("MongoDB Connection Error:", err);
+    console.error("MongoDB Connection Error:", err);
   });
 
 // Home Route
@@ -43,12 +46,35 @@ app.get("/", (req, res) => {
 // Create a new task
 app.post("/tasks", async (req, res) => {
   try {
-    const task = await Task.create(req.body);
+    // Save task in MongoDB
+    const taskData = {
+  ...req.body,
+  priority:
+    typeof req.body.priority === "string"
+      ? req.body.priority.charAt(0).toUpperCase() +
+        req.body.priority.slice(1).toLowerCase()
+      : req.body.priority,
+};
 
+const task = await Task.create(taskData);
+
+    // Clear cached task list
     cache.del("all_tasks");
 
+    // Log API response time
+    console.log("API Response Time:", new Date().toISOString());
+
+    // Send response to the client
     res.status(201).json(task);
+
+    // Emit event for asynchronous notification
+    taskEventEmitter.emit("task-created", {
+      title: task.title,
+      assignedUser: task.assignedUser || "Not assigned",
+    });
   } catch (err) {
+    console.error("Create Task Error:", err);
+
     res.status(400).json({
       error: err.message,
     });
@@ -82,19 +108,20 @@ app.get("/tasks", async (req, res) => {
       cache.get("all_tasks") !== undefined
     );
 
-    res.status(200).json(tasks);
+    return res.status(200).json(tasks);
   } catch (err) {
-    res.status(500).json({
+    console.error("Get Tasks Error:", err);
+
+    return res.status(500).json({
       error: err.message,
     });
   }
 });
 
-// Get single task by ID
+// Get a single task by ID
 app.get("/tasks/:id", async (req, res) => {
   try {
     const cacheKey = `task_${req.params.id}`;
-
     const cachedTask = cache.get(cacheKey);
 
     if (cachedTask !== undefined) {
@@ -119,9 +146,11 @@ app.get("/tasks/:id", async (req, res) => {
 
     cache.set(cacheKey, task);
 
-    res.status(200).json(task);
+    return res.status(200).json(task);
   } catch (err) {
-    res.status(500).json({
+    console.error("Get Task Error:", err);
+
+    return res.status(500).json({
       error: err.message,
     });
   }
@@ -133,7 +162,10 @@ app.put("/tasks/:id", async (req, res) => {
     const task = await Task.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!task) {
@@ -142,12 +174,15 @@ app.put("/tasks/:id", async (req, res) => {
       });
     }
 
+    // Clear cached data
     cache.del("all_tasks");
     cache.del(`task_${req.params.id}`);
 
-    res.status(200).json(task);
+    return res.status(200).json(task);
   } catch (err) {
-    res.status(500).json({
+    console.error("Update Task Error:", err);
+
+    return res.status(500).json({
       error: err.message,
     });
   }
@@ -164,14 +199,17 @@ app.delete("/tasks/:id", async (req, res) => {
       });
     }
 
+    // Clear cached data
     cache.del("all_tasks");
     cache.del(`task_${req.params.id}`);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Task deleted successfully",
     });
   } catch (err) {
-    res.status(500).json({
+    console.error("Delete Task Error:", err);
+
+    return res.status(500).json({
       error: err.message,
     });
   }
@@ -179,7 +217,7 @@ app.delete("/tasks/:id", async (req, res) => {
 
 // Cache statistics endpoint
 app.get("/cache-stats", (req, res) => {
-  res.status(200).json({
+  return res.status(200).json({
     ...stats.get(),
     keys: cache.keys(),
     ttl: 60,
@@ -190,14 +228,14 @@ app.get("/cache-stats", (req, res) => {
 app.delete("/cache-stats", (req, res) => {
   stats.reset();
 
-  res.status(200).json({
+  return res.status(200).json({
     message: "Cache statistics reset successfully",
   });
 });
 
 // Global error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error("Global Error:", err.stack || err);
 
   res.status(500).json({
     error: "Something went wrong",
