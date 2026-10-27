@@ -28,16 +28,6 @@ app.use(cors());
 // Middleware to parse JSON data
 app.use(express.json());
 
-// Connect to MongoDB Atlas
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("MongoDB Connected");
-  })
-  .catch((err) => {
-    console.error("MongoDB Connection Error:", err);
-  });
-
 // Home Route
 app.get("/", (req, res) => {
   res.send("Task Manager API is Running...");
@@ -46,17 +36,17 @@ app.get("/", (req, res) => {
 // Create a new task
 app.post("/tasks", async (req, res) => {
   try {
-    // Save task in MongoDB
     const taskData = {
-  ...req.body,
-  priority:
-    typeof req.body.priority === "string"
-      ? req.body.priority.charAt(0).toUpperCase() +
-        req.body.priority.slice(1).toLowerCase()
-      : req.body.priority,
-};
+      ...req.body,
+      priority:
+        typeof req.body.priority === "string"
+          ? req.body.priority.charAt(0).toUpperCase() +
+            req.body.priority.slice(1).toLowerCase()
+          : req.body.priority,
+    };
 
-const task = await Task.create(taskData);
+    // Save task in MongoDB
+    const task = await Task.create(taskData);
 
     // Clear cached task list
     cache.del("all_tasks");
@@ -242,10 +232,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Set server port
-const PORT = process.env.PORT || 5000;
+// Start server and connect to MongoDB only when run directly
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log("MongoDB Connected");
+
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error("MongoDB Connection Error:", err);
+      process.exit(1);
+    });
+}
+
+// Export app for automated testing
+module.exports = app;
