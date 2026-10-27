@@ -6,7 +6,7 @@ describe("Task Manager API", () => {
     const response = await request(app).get("/");
 
     expect(response.statusCode).toBe(200);
-    expect(response.text).toBe("Task Manager API is Running...");
+    expect(response.text).toBe("Wrong message for testing failure");
   });
 
   test("GET /cache-stats should return cache statistics", async () => {
