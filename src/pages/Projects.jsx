@@ -8,6 +8,7 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  generateTaskDescription,
 } from "../api";
 
 function Projects() {
@@ -26,6 +27,10 @@ function Projects() {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
   const [creating, setCreating] = useState(false);
+
+  // FREE DEMO DESCRIPTION
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   // UPDATE
   const [updating, setUpdating] = useState(false);
@@ -63,6 +68,39 @@ function Projects() {
   }, []);
 
   // ==============================
+  // FREE DEMO DESCRIPTION
+  // ==============================
+
+  const handleGenerateDescription = async () => {
+    // Validate task title
+    if (!title.trim()) {
+      setAiError("Please enter a task title first.");
+      return;
+    }
+
+    setGeneratingAI(true);
+    setAiError("");
+    setMessage("");
+
+    try {
+      // Generate description using free demo endpoint
+      const generatedDescription =
+        await generateTaskDescription(title);
+
+      // Fill description textbox
+      setDescription(generatedDescription);
+
+      setMessage("Demo description generated successfully!");
+    } catch (err) {
+      setAiError(
+        err.message || "Failed to generate demo description."
+      );
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
+
+  // ==============================
   // POST - CREATE TASK
   // ==============================
 
@@ -90,6 +128,8 @@ function Projects() {
         setTitle("");
         setDescription("");
         setPriority("medium");
+
+        setAiError("");
 
         setMessage("Task created successfully!");
       })
@@ -248,13 +288,16 @@ function Projects() {
           gap: "12px",
         }}
       >
+        {/* TASK TITLE */}
+
         <input
           type="text"
           placeholder="Task title"
           value={title}
-          onChange={(e) =>
-            setTitle(e.target.value)
-          }
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setAiError("");
+          }}
           required
           style={{
             padding: "12px",
@@ -264,21 +307,75 @@ function Projects() {
           }}
         />
 
-        <input
-          type="text"
+        {/* FREE DEMO DESCRIPTION BUTTON */}
+
+        <button
+          type="button"
+          onClick={handleGenerateDescription}
+          disabled={generatingAI || !title.trim()}
+          style={{
+            padding: "12px",
+            fontSize: "16px",
+            cursor: generatingAI
+              ? "not-allowed"
+              : "pointer",
+            backgroundColor: "#2563eb",
+            color: "white",
+            border: "none",
+            borderRadius: "5px",
+          }}
+        >
+          {generatingAI
+            ? "Generating Demo Description..."
+            : "Generate Demo Description"}
+        </button>
+
+        {/* DEMO ERROR MESSAGE */}
+
+        {aiError && (
+          <p
+            style={{
+              color: "red",
+              margin: "0",
+            }}
+          >
+            {aiError}
+          </p>
+        )}
+
+        {/* TASK DESCRIPTION */}
+
+        <textarea
           placeholder="Task description"
           value={description}
           onChange={(e) =>
             setDescription(e.target.value)
           }
           required
+          rows={4}
           style={{
             padding: "12px",
             fontSize: "16px",
             width: "100%",
             boxSizing: "border-box",
+            resize: "vertical",
           }}
         />
+
+        {/* DEMO DISCLAIMER */}
+
+        <p
+          style={{
+            fontSize: "13px",
+            color: "#777",
+            margin: "0",
+          }}
+        >
+          Free Demo Mode: Template-based description,
+          not AI-generated. Please review before saving.
+        </p>
+
+        {/* PRIORITY */}
 
         <select
           value={priority}
@@ -292,18 +389,14 @@ function Projects() {
             boxSizing: "border-box",
           }}
         >
-          <option value="low">
-            Low
-          </option>
+          <option value="low">Low</option>
 
-          <option value="medium">
-            Medium
-          </option>
+          <option value="medium">Medium</option>
 
-          <option value="high">
-            High
-          </option>
+          <option value="high">High</option>
         </select>
+
+        {/* CREATE BUTTON */}
 
         <button
           type="submit"
@@ -344,6 +437,8 @@ function Projects() {
               boxSizing: "border-box",
             }}
           >
+            {/* TASK TITLE */}
+
             <h3
               style={{
                 marginTop: "0",
@@ -353,12 +448,18 @@ function Projects() {
               {task.title}
             </h3>
 
+            {/* TASK DESCRIPTION */}
+
             <p>{task.description}</p>
+
+            {/* PRIORITY */}
 
             <p>
               <strong>Priority:</strong>{" "}
               {task.priority}
             </p>
+
+            {/* STATUS */}
 
             <p>
               <strong>Status:</strong>{" "}

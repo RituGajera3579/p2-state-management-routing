@@ -1,34 +1,26 @@
-// Import Express framework
+
 const express = require("express");
-
-// Import CORS
 const cors = require("cors");
-
-// Import Mongoose
 const mongoose = require("mongoose");
-
-// Import Task model
 const Task = require("./models/Task");
-
-// Import task event emitter
 const taskEventEmitter = require("./events/taskEvents");
-
-// Import cache and cache statistics
 const { cache, stats } = require("./cache");
 
-// Load environment variables
 require("dotenv").config();
 
-// Create Express app
+// ==========================================
+// INITIALIZE APP
+// ==========================================
+
 const app = express();
 
-// Enable CORS
 app.use(cors());
-
-// Middleware to parse JSON data
 app.use(express.json());
 
-// Connect to MongoDB Atlas
+// ==========================================
+// MONGODB CONNECTION
+// ==========================================
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
@@ -38,40 +30,90 @@ mongoose
     console.error("MongoDB Connection Error:", err);
   });
 
-// Home Route
+// ==========================================
+// HOME ROUTE
+// ==========================================
+
 app.get("/", (req, res) => {
   res.send("Task Manager API is Running...");
 });
 
-// Create a new task
+// ==========================================
+// FREE DEMO TASK DESCRIPTION GENERATOR
+// ==========================================
+
+app.post("/api/ai/generate-description", (req, res) => {
+  try {
+    const { title } = req.body;
+
+    // Validate title
+    if (
+      !title ||
+      typeof title !== "string" ||
+      !title.trim()
+    ) {
+      return res.status(400).json({
+        error: "Task title is required",
+      });
+    }
+
+    // Generate demo description
+    const description =
+      `Plan and complete "${title.trim()}". ` +
+      "Break the task into manageable steps, " +
+      "identify the required resources, and " +
+      "review the result before marking it as completed.";
+
+    return res.status(200).json({
+      description,
+      mode: "demo",
+    });
+
+  } catch (err) {
+    console.error("Demo Description Error:", err.message);
+
+    return res.status(500).json({
+      error: "Description generation failed. Please try again.",
+    });
+  }
+});
+
+// ==========================================
+// CREATE TASK
+// ==========================================
+
 app.post("/tasks", async (req, res) => {
   try {
-    // Save task in MongoDB
     const taskData = {
-  ...req.body,
-  priority:
-    typeof req.body.priority === "string"
-      ? req.body.priority.charAt(0).toUpperCase() +
-        req.body.priority.slice(1).toLowerCase()
-      : req.body.priority,
-};
+      ...req.body,
 
-const task = await Task.create(taskData);
+      priority:
+        typeof req.body.priority === "string"
+          ? req.body.priority.charAt(0).toUpperCase() +
+            req.body.priority.slice(1).toLowerCase()
+          : req.body.priority,
+    };
+
+    // Save task in MongoDB
+    const task = await Task.create(taskData);
 
     // Clear cached task list
     cache.del("all_tasks");
 
-    // Log API response time
-    console.log("API Response Time:", new Date().toISOString());
+    console.log(
+      "API Response Time:",
+      new Date().toISOString()
+    );
 
-    // Send response to the client
+    // Send response
     res.status(201).json(task);
 
-    // Emit event for asynchronous notification
+    // Emit task-created event
     taskEventEmitter.emit("task-created", {
       title: task.title,
       assignedUser: task.assignedUser || "Not assigned",
     });
+
   } catch (err) {
     console.error("Create Task Error:", err);
 
@@ -81,9 +123,13 @@ const task = await Task.create(taskData);
   }
 });
 
-// Get all tasks
+// ==========================================
+// GET ALL TASKS
+// ==========================================
+
 app.get("/tasks", async (req, res) => {
   try {
+    // Check cache
     const cachedTasks = cache.get("all_tasks");
 
     if (cachedTasks !== undefined) {
@@ -94,21 +140,26 @@ app.get("/tasks", async (req, res) => {
       return res.status(200).json(cachedTasks);
     }
 
+    // Cache miss
     stats.miss();
 
     console.log("Cache MISS - Fetching tasks from MongoDB");
 
+    // Fetch tasks
     const tasks = await Task.find();
 
+    // Store tasks in cache
     cache.set("all_tasks", tasks);
 
     console.log("Cache keys after set:", cache.keys());
+
     console.log(
       "Cache value exists:",
       cache.get("all_tasks") !== undefined
     );
 
     return res.status(200).json(tasks);
+
   } catch (err) {
     console.error("Get Tasks Error:", err);
 
@@ -118,10 +169,15 @@ app.get("/tasks", async (req, res) => {
   }
 });
 
-// Get a single task by ID
+// ==========================================
+// GET SINGLE TASK
+// ==========================================
+
 app.get("/tasks/:id", async (req, res) => {
   try {
     const cacheKey = `task_${req.params.id}`;
+
+    // Check cache
     const cachedTask = cache.get(cacheKey);
 
     if (cachedTask !== undefined) {
@@ -132,10 +188,12 @@ app.get("/tasks/:id", async (req, res) => {
       return res.status(200).json(cachedTask);
     }
 
+    // Cache miss
     stats.miss();
 
     console.log("Cache MISS - Fetching task from MongoDB");
 
+    // Fetch task
     const task = await Task.findById(req.params.id);
 
     if (!task) {
@@ -144,9 +202,11 @@ app.get("/tasks/:id", async (req, res) => {
       });
     }
 
+    // Store task in cache
     cache.set(cacheKey, task);
 
     return res.status(200).json(task);
+
   } catch (err) {
     console.error("Get Task Error:", err);
 
@@ -156,7 +216,10 @@ app.get("/tasks/:id", async (req, res) => {
   }
 });
 
-// Update task by ID
+// ==========================================
+// UPDATE TASK
+// ==========================================
+
 app.put("/tasks/:id", async (req, res) => {
   try {
     const task = await Task.findByIdAndUpdate(
@@ -179,6 +242,7 @@ app.put("/tasks/:id", async (req, res) => {
     cache.del(`task_${req.params.id}`);
 
     return res.status(200).json(task);
+
   } catch (err) {
     console.error("Update Task Error:", err);
 
@@ -188,10 +252,15 @@ app.put("/tasks/:id", async (req, res) => {
   }
 });
 
-// Delete task by ID
+// ==========================================
+// DELETE TASK
+// ==========================================
+
 app.delete("/tasks/:id", async (req, res) => {
   try {
-    const task = await Task.findByIdAndDelete(req.params.id);
+    const task = await Task.findByIdAndDelete(
+      req.params.id
+    );
 
     if (!task) {
       return res.status(404).json({
@@ -206,6 +275,7 @@ app.delete("/tasks/:id", async (req, res) => {
     return res.status(200).json({
       message: "Task deleted successfully",
     });
+
   } catch (err) {
     console.error("Delete Task Error:", err);
 
@@ -215,7 +285,11 @@ app.delete("/tasks/:id", async (req, res) => {
   }
 });
 
-// Cache statistics endpoint
+// ==========================================
+// CACHE STATISTICS
+// ==========================================
+
+// Get cache statistics
 app.get("/cache-stats", (req, res) => {
   return res.status(200).json({
     ...stats.get(),
@@ -233,7 +307,10 @@ app.delete("/cache-stats", (req, res) => {
   });
 });
 
-// Global error handling middleware
+// ==========================================
+// GLOBAL ERROR HANDLING
+// ==========================================
+
 app.use((err, req, res, next) => {
   console.error("Global Error:", err.stack || err);
 
@@ -242,10 +319,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Set server port
+// ==========================================
+// START SERVER
+// ==========================================
+
 const PORT = process.env.PORT || 5000;
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
