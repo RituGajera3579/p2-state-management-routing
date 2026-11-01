@@ -167,9 +167,12 @@ These features demonstrate caching and event-driven backend processing.
 - Backend caching.
 - Event-driven programming.
 - Docker-based application setup.
+  
 👩‍🎓 Developed By
 Ritu Gajera
 
 B.Tech Information Technology
+
 🔗 GitHub Repository
+
 Personal Portfolio & Task Manager
