@@ -1,4 +1,5 @@
-Personal Portfolio & Task Manager
+**Personal Portfolio & Task Manager**
+
 A full-stack web application that combines a personal portfolio website with a Task Management System. The project demonstrates React components, routing, lazy loading, API integration, task management, and backend performance optimization.
 📌 Project Overview
 The Personal Portfolio showcases academic background, technical skills, and projects.
